@@ -1,0 +1,10 @@
+{
+    "Records": [
+        {
+            "Sns": {
+                "Message": "{\"ID\":3618287, \"ANNOUNCEMENT_TYPE\":1}",
+                "Subject": "create"
+            }
+        }
+    ]
+}

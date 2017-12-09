@@ -1,0 +1,79 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: "Example"
+
+Mappings:
+  RegionMap:
+    us-east-1:
+      EnvRegion: indie
+
+Parameters:
+  Owner:
+    Description: "me pertenece a mi"
+    Type: String
+  Env:
+    Description: "ambiente donde se lanza lambda"
+    Type: String
+  FunctionName:
+    Type: String
+  SourceFunctionBucket:
+    Type: String
+  SourceFunctionKey:
+    Type: String
+
+Resources:
+  SNS:
+    Type: "AWS::SNS::Topic"
+    Properties:
+      TopicName: !Sub "${Owner}-${Env}-${FunctionName}"
+  FunctionRole:
+    Type: AWS::IAM::Role
+    DependsOn:
+      - SNS
+    Properties:
+      RoleName: !Sub "${Owner}.${Env}.${FunctionName}"
+      AssumeRolePolicyDocument: # define los servicios que va a usar este rol
+        Statement:
+          -
+            Effect: "Allow"
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: /
+      Policies:
+        - 
+          PolicyName: !Sub "${Owner}.${Env}.${FunctionName}"
+          PolicyDocument:
+            Statement:
+              -
+                Effect: Allow
+                Action:
+                  - sns:*
+                Resource: !Ref SNS
+              -
+                Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: "*"
+  Function:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub "${Owner}-${Env}-${FunctionName}"
+      Description: "example"
+      Handler: index.handler
+      Runtime: nodejs6.10
+      CodeUri: # donde se va a ubicar mi funcion lambda
+        Bucket: !Ref SourceFunctionBucket
+        Key: !Ref SourceFunctionKey
+      MemorySize: 128
+      Timeout: 60
+      Role: !GetAtt FunctionRole.Arn
+      Events:
+        SNS:
+          Type: SNS
+          Properties:
+            Topic: !Ref SNS
